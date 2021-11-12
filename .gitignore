@@ -1,0 +1,7 @@
+/.env
+/.venv/
+/.vscode/
+/build/
+*.egg-info/
+pyproject.toml
+*.log
