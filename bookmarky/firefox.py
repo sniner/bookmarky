@@ -20,40 +20,46 @@ class FirefoxProfile(browser.BrowserProfile):
         db = sqlite3.connect(db_path.as_uri()+"?mode=ro", uri=True)
         db.row_factory = sqlite3.Row
 
-        def get_folders() -> Generator[dict, None, None]:
-            c = db.execute("SELECT id, parent, title FROM moz_bookmarks WHERE fk IS NULL")
+        def query(statement:str) -> Generator[dict, None, None]:
+            c = db.execute(statement)
             for row in c.fetchall():
                 yield dict(row)
             c.close()
-        
-        folders = {}
-        paths = {}
-        for f in get_folders():
-            folders[f["id"]] = f
-        for folder in folders.values():
-            parent = folder["parent"]
-            path = [folder["id"]]
-            while parent>0:
-                path.append(parent)
-                parent_folder = folders[parent]
-                parent = parent_folder["parent"]
-            path_str = "/".join([folders[p]["title"] or "" for p in reversed(path)])
-            paths[folder["id"]] = path_str
 
-        c = db.execute("SELECT b.*, p.url FROM moz_bookmarks b JOIN moz_places p on p.id=b.fk WHERE fk IS NOT NULL")
-        for row in c.fetchall():
-            item = dict(row)
-            bm = browser.Bookmark(
-                profile = self,
-                path = paths[item["parent"]],
-                title = item["title"],
-                url = item["url"],
-                uuid = item["guid"],
-                added = self.conv_firefox_timestamp(item["dateAdded"]),
-                modified = self.conv_firefox_timestamp(item["lastModified"]),
-            )
-            yield bm
-        c.close()
+        def get_folders() -> Generator[dict, None, None]:
+            yield from query("SELECT id, parent, title FROM moz_bookmarks WHERE fk IS NULL")
+        
+        def get_bookmarks() -> Generator[dict, None, None]:
+            yield from query("SELECT b.*, p.url FROM moz_bookmarks b JOIN moz_places p on p.id=b.fk WHERE fk IS NOT NULL")
+
+        try:
+            folders = {}
+            paths = {}
+            for f in get_folders():
+                folders[f["id"]] = f
+            for folder in folders.values():
+                parent = folder["parent"]
+                path = [folder["id"]]
+                while parent>0:
+                    path.append(parent)
+                    parent_folder = folders[parent]
+                    parent = parent_folder["parent"]
+                path_str = "/".join([folders[p]["title"] or "" for p in reversed(path)])
+                paths[folder["id"]] = path_str
+
+            for item in get_bookmarks():
+                bm = browser.Bookmark(
+                    profile = self,
+                    path = paths[item["parent"]],
+                    title = item["title"],
+                    url = item["url"],
+                    uuid = item["guid"],
+                    added = self.conv_firefox_timestamp(item["dateAdded"]),
+                    modified = self.conv_firefox_timestamp(item["lastModified"]),
+                )
+                yield bm
+        finally:
+            db.close()
 
 
 

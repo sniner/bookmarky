@@ -1,9 +1,10 @@
 import bookmarky
 
 def main():
-    gc = bookmarky.Firefox() #.GoogleChrome()
-    print(gc.base_dir)
-    for p in gc.profiles():
+    browser = bookmarky.Firefox()
+    # browser = bookmarky.GoogleChrome()
+    print(browser.base_dir)
+    for p in browser.profiles():
         print(p)
         for bm in p.bookmarks():
             print(bm, bm.modified)
