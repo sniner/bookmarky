@@ -30,7 +30,7 @@ class FirefoxProfile(browser.BrowserProfile):
             yield from query("SELECT id, parent, title FROM moz_bookmarks WHERE fk IS NULL")
         
         def get_bookmarks() -> Generator[dict, None, None]:
-            yield from query("SELECT b.*, p.url FROM moz_bookmarks b JOIN moz_places p on p.id=b.fk WHERE fk IS NOT NULL")
+            yield from query("SELECT b.*, p.url FROM moz_bookmarks b JOIN moz_places p ON p.id=b.fk WHERE fk IS NOT NULL")
 
         try:
             folders = {}
@@ -60,48 +60,7 @@ class FirefoxProfile(browser.BrowserProfile):
                 yield bm
         finally:
             db.close()
-
-
-
-
-    # def _bookmarks(self) -> Generator[browser.Bookmark, None, None]:
-    #     def gen_folder(parent:str, folder:dict) -> Generator[browser.Bookmark, None, None]:
-    #         path = parent + "/" + folder["name"]
-    #         for child in folder["children"]:
-    #             if "children" in child:
-    #                 yield from gen_folder(path, child)
-    #             else:
-    #                 #   {
-    #                 #   "date_added": "13249994125100809",
-    #                 #   "guid": "13bde0a9-fbf0-485c-a0dd-cc88596cbb9a",
-    #                 #   "id": "6",
-    #                 #   "name": "Example",
-    #                 #   "type": "url",
-    #                 #   "url": "https://example.org/"
-    #                 #   }
-    #                 bm = browser.Bookmark(
-    #                     profile = self,
-    #                     path = path,
-    #                     title = child["name"],
-    #                     url = child["url"],
-    #                     uuid = child["guid"],
-    #                     added = self.conv_webkit_timestamp(child.get("date_added")),
-    #                     modified = self.conv_webkit_timestamp(child.get("date_modified")),
-    #                 )
-    #                 yield bm
-
-    #     bf = self.path / "Bookmarks"
-    #     with open(bf) as f:
-    #         b = json.loads(f.read())
-    #     root = b["roots"]
-    #     if "bookmark_bar" in root:
-    #         yield from gen_folder("", root["bookmark_bar"])
-    #     if "other" in root:
-    #         yield from gen_folder("", root["other"])
-
-    def __str__(self):
-        return f"FirefoxProfile: '{self.display_name}' -> {self.path}"
-
+            
 
 class Firefox(browser.BrowserBase):
     def __init__(self, base_dir:Optional[Union[str,pathlib.Path]]=None):

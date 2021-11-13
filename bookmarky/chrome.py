@@ -2,7 +2,7 @@ import json
 import os
 import pathlib
 
-from typing import Union, Optional, Generator, List
+from typing import Union, Optional, Generator, List, Type
 
 from bookmarky import browser
 
@@ -52,13 +52,11 @@ class ChromeProfile(browser.BrowserProfile):
         if "other" in root:
             yield from gen_folder("", root["other"])
 
-    def __str__(self):
-        return f"ChromeProfile: '{self.display_name}' -> {self.path}"
-
 
 class GoogleChrome(browser.BrowserBase):
-    def __init__(self, base_dir:Optional[Union[str,pathlib.Path]]=None):
+    def __init__(self, base_dir:Optional[Union[str,pathlib.Path]]=None, profile:Optional[Type[ChromeProfile]]=None):
         super().__init__(base_dir or self._base_dir())
+        self.profile = profile or ChromeProfile
 
     def _base_dir(self, name:str=None):
         if name:
@@ -79,13 +77,19 @@ class GoogleChrome(browser.BrowserBase):
             with open(state_file) as f:
                 state = json.loads(f.read())
             for n, p in state["profile"]["info_cache"].items():
-                yield ChromeProfile(n, self.base_dir / n, p)
+                yield self.profile(n, self.base_dir / n, p)
         else:
             for p in self._find_profiles():
-                yield ChromeProfile(p.name, p)
+                yield self.profile(p.name, p)
 
+
+class VivaldiProfile(ChromeProfile):
+    pass
 
 class Vivaldi(GoogleChrome):
+    def __init__(self, base_dir:Optional[Union[str,pathlib.Path]]=None):
+        super().__init__(base_dir, profile=VivaldiProfile)
+
     def _base_dir(self, name:str=None):
         if name:
             return super()._base_dir(name)
@@ -95,7 +99,13 @@ class Vivaldi(GoogleChrome):
                 if p.is_dir():
                     return p
 
+class BraveProfile(ChromeProfile):
+    pass
+
 class Brave(GoogleChrome):
+    def __init__(self, base_dir:Optional[Union[str,pathlib.Path]]=None):
+        super().__init__(base_dir, profile=BraveProfile)
+
     def _base_dir(self, name:str=None):
         if name:
             return super()._base_dir(name)
